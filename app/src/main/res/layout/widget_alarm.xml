@@ -1,124 +1,179 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- "Les trois têtes": each dog of the logo is a button; the active state's dog lights up in its color. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_unknown"
+    android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:paddingStart="10dp"
+    android:paddingTop="8dp"
+    android:paddingEnd="10dp"
+    android:paddingBottom="10dp">
 
     <LinearLayout
-        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:gravity="center_vertical"
         android:orientation="horizontal">
 
+    <LinearLayout
+        android:id="@+id/col_off"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
         <FrameLayout
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:background="@drawable/widget_icon_circle">
+            android:layout_width="80dp"
+            android:layout_height="80dp">
 
             <ImageView
-                android:id="@+id/icon"
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
+                android:id="@+id/glow_off"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
                 android:contentDescription="@null"
-                android:src="@drawable/ic_shield" />
+                android:src="@drawable/widget_glow_off"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_on_off"
+                android:layout_width="34dp"
+                android:layout_height="61dp"
+                android:layout_gravity="center"
+                android:contentDescription="Off"
+                android:src="@drawable/ic_dog_head"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_off_off"
+                android:layout_width="22dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:alpha="0.45"
+                android:contentDescription="Off"
+                android:src="@drawable/ic_dog_head" />
         </FrameLayout>
 
-        <LinearLayout
-            android:layout_width="0dp"
+        <TextView
+            android:id="@+id/label_off"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_weight="1"
-            android:orientation="vertical">
-
-            <TextView
-                android:id="@+id/title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:maxLines="1"
-                android:text="Cerbère"
-                android:textColor="@color/widget_text"
-                android:textSize="20sp" />
-
-            <TextView
-                android:id="@+id/subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:alpha="0.8"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:text="Cerbère"
-                android:textColor="@color/widget_text"
-                android:textSize="12sp" />
-        </LinearLayout>
+            android:fontFamily="sans-serif-medium"
+            android:text="Off"
+            android:textColor="@color/widget_dim"
+            android:textSize="12sp" />
     </LinearLayout>
 
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp"
-        android:layout_marginTop="10dp"
-        android:orientation="horizontal">
+        android:id="@+id/col_night"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
 
         <FrameLayout
-            android:id="@+id/btn_off"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@drawable/widget_pill_off">
+            android:layout_width="80dp"
+            android:layout_height="80dp">
 
-            <TextView
-                android:id="@+id/txt_off"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+            <ImageView
+                android:id="@+id/glow_night"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:src="@drawable/widget_glow_night"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_on_night"
+                android:layout_width="34dp"
+                android:layout_height="61dp"
                 android:layout_gravity="center"
-                android:fontFamily="sans-serif-medium"
-                android:text="Off"
-                android:textColor="@color/widget_text"
-                android:textSize="13sp" />
+                android:contentDescription="Nuit"
+                android:src="@drawable/ic_dog_head"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_off_night"
+                android:layout_width="22dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:alpha="0.45"
+                android:contentDescription="Nuit"
+                android:src="@drawable/ic_dog_head" />
         </FrameLayout>
 
-        <FrameLayout
-            android:id="@+id/btn_night"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/widget_pill_off">
-
-            <TextView
-                android:id="@+id/txt_night"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:fontFamily="sans-serif-medium"
-                android:text="Nuit"
-                android:textColor="@color/widget_text"
-                android:textSize="13sp" />
-        </FrameLayout>
-
-        <FrameLayout
-            android:id="@+id/btn_on"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_marginStart="6dp"
-            android:layout_weight="1"
-            android:background="@drawable/widget_pill_off">
-
-            <TextView
-                android:id="@+id/txt_on"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:fontFamily="sans-serif-medium"
-                android:text="Totale"
-                android:textColor="@color/widget_text"
-                android:textSize="13sp" />
-        </FrameLayout>
+        <TextView
+            android:id="@+id/label_night"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="Nuit"
+            android:textColor="@color/widget_dim"
+            android:textSize="12sp" />
     </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/col_on"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="80dp"
+            android:layout_height="80dp">
+
+            <ImageView
+                android:id="@+id/glow_on"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:contentDescription="@null"
+                android:src="@drawable/widget_glow_on"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_on_on"
+                android:layout_width="34dp"
+                android:layout_height="61dp"
+                android:layout_gravity="center"
+                android:contentDescription="Totale"
+                android:src="@drawable/ic_dog_head"
+                android:visibility="gone" />
+
+            <ImageView
+                android:id="@+id/head_off_on"
+                android:layout_width="22dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:alpha="0.45"
+                android:contentDescription="Totale"
+                android:src="@drawable/ic_dog_head" />
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/label_on"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="sans-serif-medium"
+            android:text="Totale"
+            android:textColor="@color/widget_dim"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/subtitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="1"
+        android:text="Cerbère"
+        android:textColor="@color/widget_dim"
+        android:textSize="11sp" />
 </LinearLayout>

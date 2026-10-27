@@ -3,5 +3,5 @@
     <color name="accent">#D93A4F</color>
     <color name="night">#5B5FE0</color>
     <color name="widget_text">#FFFFFFFF</color>
-    <color name="widget_on_pill">#FF1C1B1F</color>
+    <color name="widget_dim">#8CFFFFFF</color>
 </resources>

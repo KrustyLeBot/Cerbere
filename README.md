@@ -5,10 +5,11 @@ app suite (Synchrotron, Griffonote, Ecoutify, Météorite): same look, same upda
 
 ## What it does
 
-- **Three states, one tap**: Désactivée, Mode nuit, Activée — in the app and in a home-screen
-  widget whose background follows the state.
-- **Night mode is never forgotten**: while it is on, a notification stays with a "Désactiver"
-  button, and every time the phone is unlocked a full-screen prompt asks to disarm (needs "display
+- **Three states, one tap**: Désactivée, Mode nuit, Activée — in the app and in the home-screen
+  widget "les trois têtes", where the logo's three dogs are the three buttons and the active one
+  lights up in its color.
+- **Night mode is never forgotten**: while the alarm is armed or in night mode, a notification
+  stays (put back if swiped away) with a "Désactiver" button, and every time the phone is unlocked a full-screen prompt asks to disarm (needs "display
   over other apps"; without it the prompt comes as a notification). It can be turned off in Settings.
 - **Live**: changes made anywhere (keypad, Somfy's app, another phone) show within a second.
 

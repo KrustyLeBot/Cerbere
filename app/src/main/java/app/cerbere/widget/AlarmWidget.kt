@@ -6,6 +6,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.TypedValue
+import android.view.View
 import android.widget.RemoteViews
 import app.cerbere.CerbereApp
 import app.cerbere.MainActivity
@@ -18,9 +20,9 @@ import java.text.DateFormat
 import java.util.Date
 
 /**
- * Home-screen widget: the alarm state on a background of its color, and the three states as
- * buttons. Redrawn by the repository on every change, so it follows the app, the keypad and
- * other phones within a second while the watch runs.
+ * Home-screen widget, "les trois têtes": the logo's three dogs are the three states (Off, Nuit,
+ * Totale) and the buttons; the active one lights up in its color. Redrawn by the repository on every
+ * change, so it follows the app, the keypad and other phones within a second while the watch runs.
  */
 class AlarmWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -38,50 +40,44 @@ class AlarmWidget : AppWidgetProvider() {
     }
 
     companion object {
-        private data class Look(val background: Int, val icon: Int, val title: String)
+        private class Dog(val level: Level, val column: Int, val glow: Int, val on: Int, val off: Int, val label: Int)
 
-        private fun look(state: AlarmState): Look = when (state.pending ?: state.level) {
-            Level.DISARMED -> Look(R.drawable.widget_bg_disarmed, R.drawable.ic_unlock, "Désactivée")
-            Level.PARTIAL -> Look(R.drawable.widget_bg_night, R.drawable.ic_moon, "Mode nuit")
-            Level.ARMED -> Look(R.drawable.widget_bg_armed, R.drawable.ic_shield, "Activée")
-            null -> Look(R.drawable.widget_bg_unknown, R.drawable.ic_shield, if (state.loggedIn) "État inconnu" else "Connecte-toi")
-        }
-
-        private val BUTTONS = listOf(
-            Triple(Level.DISARMED, R.id.btn_off, R.id.txt_off),
-            Triple(Level.PARTIAL, R.id.btn_night, R.id.txt_night),
-            Triple(Level.ARMED, R.id.btn_on, R.id.txt_on),
+        private val DOGS = listOf(
+            Dog(Level.DISARMED, R.id.col_off, R.id.glow_off, R.id.head_on_off, R.id.head_off_off, R.id.label_off),
+            Dog(Level.PARTIAL, R.id.col_night, R.id.glow_night, R.id.head_on_night, R.id.head_off_night, R.id.label_night),
+            Dog(Level.ARMED, R.id.col_on, R.id.glow_on, R.id.head_on_on, R.id.head_off_on, R.id.label_on),
         )
 
         fun update(context: Context, state: AlarmState) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, AlarmWidget::class.java))
             if (ids.isEmpty()) return
-            val look = look(state)
             val views = RemoteViews(context.packageName, R.layout.widget_alarm)
-            views.setInt(R.id.root, "setBackgroundResource", look.background)
-            views.setImageViewResource(R.id.icon, look.icon)
-            views.setTextViewText(R.id.title, look.title)
+            val current = state.pending ?: state.level
+            DOGS.forEach { dog ->
+                val lit = state.loggedIn && dog.level == current
+                views.setViewVisibility(dog.glow, if (lit) View.VISIBLE else View.GONE)
+                views.setViewVisibility(dog.on, if (lit) View.VISIBLE else View.GONE)
+                views.setViewVisibility(dog.off, if (lit) View.GONE else View.VISIBLE)
+                views.setTextColor(dog.label, context.getColor(if (lit) R.color.widget_text else R.color.widget_dim))
+                views.setTextViewTextSize(dog.label, TypedValue.COMPLEX_UNIT_SP, if (lit) 13f else 12f)
+                if (state.loggedIn) views.setOnClickPendingIntent(dog.column, ActionReceiver.intent(context, dog.level))
+            }
             views.setTextViewText(
                 R.id.subtitle,
                 when {
+                    !state.loggedIn -> "Connecte-toi dans Cerbère"
                     state.pending != null -> "Envoi à Somfy…"
-                    state.error != null && state.loggedIn -> state.error
-                    state.updatedAt > 0 -> "${state.siteName.ifBlank { "Cerbère" }} · ${DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(state.updatedAt))}"
+                    state.error != null -> state.error
+                    state.updatedAt > 0 -> "Cerbère · ${state.siteName.ifBlank { "Maison" }} · " +
+                        DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(state.updatedAt))
                     else -> "Cerbère"
                 },
             )
             views.setOnClickPendingIntent(
-                R.id.header,
+                R.id.subtitle,
                 PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE),
             )
-            val current = state.pending ?: state.level
-            BUTTONS.forEach { (level, button, text) ->
-                val selected = level == current
-                views.setInt(button, "setBackgroundResource", if (selected) R.drawable.widget_pill_on else R.drawable.widget_pill_off)
-                views.setTextColor(text, context.getColor(if (selected) R.color.widget_on_pill else R.color.widget_text))
-                if (state.loggedIn) views.setOnClickPendingIntent(button, ActionReceiver.intent(context, level))
-            }
             manager.updateAppWidget(ids, views)
         }
     }

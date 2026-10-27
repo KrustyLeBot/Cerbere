@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- One head of the logo, eyes and nose cut out: the widget's three buttons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="30dp" android:height="54dp" android:viewportWidth="30" android:viewportHeight="54">
+    <group android:translateX="-39" android:translateY="-23">
+        <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M46,41 L41,25 L52,36 L56,36 L67,25 L62,41 C67,45 68,52 64,57 L60,63 C60,70 57,75 54,75 C51,75 48,70 48,63 L44,57 C40,52 41,45 46,41 Z M47.0,49.0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0 Z M56.4,49.0 a2.3,2.3 0 1,0 4.6,0 a2.3,2.3 0 1,0 -4.6,0 Z M50.8,68.5 a3.2,2.2 0 1,0 6.4,0 a3.2,2.2 0 1,0 -6.4,0 Z" />
+    </group>
+</vector>
