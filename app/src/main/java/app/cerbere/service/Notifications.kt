@@ -13,28 +13,31 @@ import app.cerbere.somfy.AlarmState
 import app.cerbere.somfy.Level
 
 /**
- * The guard service's notification, which follows the alarm: discreet while disarmed or fully armed,
- * prominent (its own channel, a "Désactiver" button) while night mode is on, so it is not forgotten
- * in the morning.
+ * The guard service's notification, which follows the alarm:
+ * - armed or night mode: on its own channel, with a "Désactiver" button, and put back at once if
+ *   swiped away (Android 14+ lets the user dismiss any notification, even ongoing ones);
+ * - disarmed: the minimum Android requires for the watch to run, on a silent channel without a
+ *   status-bar icon, which can be hidden entirely in Android's settings ([OFF_CHANNEL]).
  */
 object Notifications {
     const val ID = 1
     const val REMINDER_ID = 2
-    private const val CH_GUARD = "guard"
-    private const val CH_NIGHT = "night"
+    const val OFF_CHANNEL = "guard"
+    private const val CH_ACTIVE = "active"
     const val CH_REMINDER = "reminder"
 
     fun createChannels(context: Context) {
         val nm = context.getSystemService(NotificationManager::class.java)
+        nm.deleteNotificationChannel("night") // replaced by CH_ACTIVE (armed too)
         nm.createNotificationChannel(
-            NotificationChannel(CH_GUARD, "Veille", NotificationManager.IMPORTANCE_MIN).apply {
-                description = "État de l'alarme quand le mode nuit est coupé"
+            NotificationChannel(OFF_CHANNEL, "Alarme désactivée", NotificationManager.IMPORTANCE_MIN).apply {
+                description = "Veille discrète quand l'alarme est désactivée. Peut être masquée sans arrêter Cerbère."
                 setShowBadge(false)
             }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CH_NIGHT, "Mode nuit activé", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Reste affichée tant que le mode nuit est activé"
+            NotificationChannel(CH_ACTIVE, "Alarme activée ou mode nuit", NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = "Reste affichée tant que l'alarme est activée ou en mode nuit"
                 setSound(null, null)
                 enableVibration(false)
             }
@@ -46,26 +49,41 @@ object Notifications {
         )
     }
 
+    /** Whether the user hid the disarmed-state notification in Android's settings. */
+    fun offHidden(context: Context): Boolean =
+        context.getSystemService(NotificationManager::class.java).getNotificationChannel(OFF_CHANNEL)?.importance ==
+            NotificationManager.IMPORTANCE_NONE
+
+    fun offChannelSettings(context: Context): Intent =
+        Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
+            .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)
+            .putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, OFF_CHANNEL)
+
     fun build(context: Context, state: AlarmState): Notification {
         val open = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val night = state.level == Level.PARTIAL
-        val builder = NotificationCompat.Builder(context, if (night) CH_NIGHT else CH_GUARD)
+        val level = state.pending ?: state.level
+        val active = level == Level.PARTIAL || level == Level.ARMED
+        val builder = NotificationCompat.Builder(context, if (active) CH_ACTIVE else OFF_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_cerbere)
-            .setColor(context.getColor(if (night) R.color.night else R.color.accent))
+            .setColor(context.getColor(if (level == Level.PARTIAL) R.color.night else R.color.accent))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setContentIntent(open)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
+        if (active) builder.setDeleteIntent(ActionReceiver.repost(context))
         when {
             state.pending != null -> builder.setContentTitle("${state.pending.label}…").setContentText("Envoi à Somfy")
-            night -> builder.setContentTitle("Mode nuit activé")
+            level == Level.PARTIAL -> builder.setContentTitle("Mode nuit activé")
                 .setContentText("Pense à désactiver l'alarme avant de sortir.")
                 .addAction(0, "Désactiver", ActionReceiver.intent(context, Level.DISARMED))
-            else -> builder.setContentTitle("Alarme ${state.level?.label?.lowercase() ?: "inconnue"}")
+            level == Level.ARMED -> builder.setContentTitle("Alarme activée")
+                .setContentText("La maison est sous surveillance.")
+                .addAction(0, "Désactiver", ActionReceiver.intent(context, Level.DISARMED))
+            else -> builder.setContentTitle("Alarme ${level?.label?.lowercase() ?: "inconnue"}")
                 .setContentText(if (state.live) "Cerbère veille" else "Cerbère veille (connexion en cours)")
         }
         return builder.build()
@@ -79,6 +97,7 @@ object Notifications {
             return
         }
         if (state.level != Level.PARTIAL) nm.cancel(REMINDER_ID)
+        // Updated in place: the guard service owns it while it runs.
         runCatching { nm.notify(ID, build(context, state)) } // missing notification permission: nothing to show
     }
 }

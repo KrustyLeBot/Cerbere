@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import app.cerbere.MainViewModel
+import app.cerbere.service.Notifications
 import app.cerbere.service.Reminder
 import app.cerbere.somfy.AlarmState
 import app.cerbere.suite.AboutSettings
@@ -48,6 +49,7 @@ fun SettingsScreen(vm: MainViewModel, state: AlarmState) {
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { tick++ }
     var reminder by remember { mutableStateOf(Reminder.enabled(context)) }
     val overlayOk = remember(tick) { Reminder.canShowFullScreen(context) }
+    val offHidden = remember(tick) { Notifications.offHidden(context) }
     val batteryOk = remember(tick) {
         context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
     }
@@ -79,6 +81,18 @@ fun SettingsScreen(vm: MainViewModel, state: AlarmState) {
                     if (!overlayOk) OutlinedButton(onClick = { context.startActivity(Reminder.overlaySettings(context)) }) { Text("Autoriser le plein écran") }
                 }
                 SettingsHint("Tant que le mode nuit est activé, une notification reste affichée avec un bouton « Désactiver ».")
+            }
+
+            SectionTitle("Notification")
+            SettingsCard {
+                Text("Alarme activée ou mode nuit", fontWeight = FontWeight.SemiBold)
+                SettingsHint("Une notification reste affichée, avec un bouton « Désactiver ». Balayée, elle revient.")
+                Text("Alarme désactivée", fontWeight = FontWeight.SemiBold)
+                SettingsHint(
+                    if (offHidden) "Aucune notification ✓"
+                    else "Android impose une notification discrète pour que Cerbère veille (sans icône dans la barre d'état). Tu peux la masquer : Cerbère continue de veiller.",
+                )
+                if (!offHidden) OutlinedButton(onClick = { context.startActivity(Notifications.offChannelSettings(context)) }) { Text("Masquer quand l'alarme est désactivée") }
             }
 
             SectionTitle("Arrière-plan")
