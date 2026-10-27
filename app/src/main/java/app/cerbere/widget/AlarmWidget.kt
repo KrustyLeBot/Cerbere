@@ -21,7 +21,7 @@ import java.util.Date
 
 /**
  * Home-screen widget, "les trois têtes": the logo's three dogs are the three states (Off, Nuit,
- * Totale) and the buttons; the active one lights up in its color. Redrawn by the repository on every
+ * Totale) and the buttons; the active one lights up and the card takes the state's color. Redrawn by the repository on every
  * change, so it follows the app, the keypad and other phones within a second while the watch runs.
  */
 class AlarmWidget : AppWidgetProvider() {
@@ -54,6 +54,15 @@ class AlarmWidget : AppWidgetProvider() {
             if (ids.isEmpty()) return
             val views = RemoteViews(context.packageName, R.layout.widget_alarm)
             val current = state.pending ?: state.level
+            views.setInt(
+                R.id.root, "setBackgroundResource",
+                when (current.takeIf { state.loggedIn }) {
+                    Level.DISARMED -> R.drawable.widget_bg_off
+                    Level.PARTIAL -> R.drawable.widget_bg_night
+                    Level.ARMED -> R.drawable.widget_bg_on
+                    null -> R.drawable.widget_bg_unknown
+                },
+            )
             DOGS.forEach { dog ->
                 val lit = state.loggedIn && dog.level == current
                 views.setViewVisibility(dog.glow, if (lit) View.VISIBLE else View.GONE)
@@ -69,7 +78,7 @@ class AlarmWidget : AppWidgetProvider() {
                     !state.loggedIn -> "Connecte-toi dans Cerbère"
                     state.pending != null -> "Envoi à Somfy…"
                     state.error != null -> state.error
-                    state.updatedAt > 0 -> "Cerbère · ${state.siteName.ifBlank { "Maison" }} · " +
+                    state.updatedAt > 0 -> "${current?.label ?: "Cerbère"} · ${state.siteName.ifBlank { "Maison" }} · " +
                         DateFormat.getTimeInstance(DateFormat.SHORT).format(Date(state.updatedAt))
                     else -> "Cerbère"
                 },
