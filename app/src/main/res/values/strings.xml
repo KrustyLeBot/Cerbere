@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Cerbère</string>
+    <string name="widget_description">Alarme : état et changement en un geste</string>
+    <string name="guard_service_reason">Garde la connexion à l\'alarme Somfy pour savoir à tout moment si le mode nuit est activé et le rappeler au déverrouillage.</string>
+</resources>
