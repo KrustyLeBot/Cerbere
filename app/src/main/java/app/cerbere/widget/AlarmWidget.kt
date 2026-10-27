@@ -56,8 +56,11 @@ class AlarmWidget : AppWidgetProvider() {
             Dog(Level.ARMED, R.id.col_on, R.id.glow_on, R.id.head_on_on, R.id.head_off_on, R.id.label_on),
         )
 
-        /** Below this height (one row on most launchers) the compact layout is used. */
-        private const val COMPACT_BELOW_DP = 100f
+        /**
+         * Below this height the compact layout is used. One row is 70 to 130 dp depending on the launcher,
+         * while the full layout needs about 140 dp to show the names under the dogs.
+         */
+        private const val COMPACT_BELOW_DP = 140f
 
         fun update(context: Context, state: AlarmState) {
             val manager = AppWidgetManager.getInstance(context)
