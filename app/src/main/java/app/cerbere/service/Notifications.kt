@@ -20,8 +20,14 @@ import app.cerbere.somfy.Level
  *   status-bar icon, which can be hidden entirely in Android's settings ([OFF_CHANNEL]).
  */
 object Notifications {
-    const val ID = 1
+    /**
+     * One id per kind: an update moved to the disarmed channel, when the user turned that channel off,
+     * would be dropped and leave the "alarm on" notification showing. With two ids the old one is
+     * cancelled for real.
+     */
+    const val ID_ACTIVE = 1
     const val REMINDER_ID = 2
+    const val ID_OFF = 3
     const val OFF_CHANNEL = "guard"
     private const val CH_ACTIVE = "active"
     const val CH_REMINDER = "reminder"
@@ -65,7 +71,7 @@ object Notifications {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
         val level = state.pending ?: state.level
-        val active = level == Level.PARTIAL || level == Level.ARMED
+        val active = isActive(state)
         val builder = NotificationCompat.Builder(context, if (active) CH_ACTIVE else OFF_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_cerbere)
             .setColor(context.getColor(if (level == Level.PARTIAL) R.color.night else R.color.accent))
@@ -89,15 +95,23 @@ object Notifications {
         return builder.build()
     }
 
+    fun isActive(state: AlarmState): Boolean = (state.pending ?: state.level).let { it == Level.PARTIAL || it == Level.ARMED }
+
+    fun idFor(state: AlarmState) = if (isActive(state)) ID_ACTIVE else ID_OFF
+
     fun show(context: Context, state: AlarmState) {
         val nm = context.getSystemService(NotificationManager::class.java)
         if (!state.loggedIn) {
-            nm.cancel(ID)
+            nm.cancel(ID_ACTIVE)
+            nm.cancel(ID_OFF)
             nm.cancel(REMINDER_ID)
             return
         }
         if (state.level != Level.PARTIAL) nm.cancel(REMINDER_ID)
-        // Updated in place: the guard service owns it while it runs.
-        runCatching { nm.notify(ID, build(context, state)) } // missing notification permission: nothing to show
+        // While the guard service runs it owns the notification (moving it to the right id); otherwise post it here.
+        if (GuardService.showForeground(state)) return
+        val id = idFor(state)
+        runCatching { nm.notify(id, build(context, state)) } // missing notification permission: nothing to show
+        nm.cancel(if (id == ID_ACTIVE) ID_OFF else ID_ACTIVE)
     }
 }

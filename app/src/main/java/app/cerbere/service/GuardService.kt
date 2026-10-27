@@ -1,5 +1,6 @@
 package app.cerbere.service
 
+import android.app.NotificationManager
 import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -12,6 +13,7 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import app.cerbere.CerbereApp
+import app.cerbere.somfy.AlarmState
 import app.cerbere.somfy.Level
 import app.cerbere.somfy.LoginRequired
 import app.cerbere.somfy.SomfyApi
@@ -72,12 +74,8 @@ class GuardService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        val notification = Notifications.build(this, app.alarm.state.value)
-        if (Build.VERSION.SDK_INT >= 34) {
-            startForeground(Notifications.ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        } else {
-            startForeground(Notifications.ID, notification)
-        }
+        foreground(app.alarm.state.value)
+        instance = this
         registerReceiver(unlocked, IntentFilter(Intent.ACTION_USER_PRESENT))
         getSystemService(ConnectivityManager::class.java).registerDefaultNetworkCallback(network)
         scope.launch {
@@ -94,7 +92,24 @@ class GuardService : Service() {
         return START_STICKY
     }
 
+    private var shownId = 0
+
+    /** Shows [state]'s notification as this service's own, and removes the other kind. */
+    private fun foreground(state: AlarmState) {
+        val id = Notifications.idFor(state)
+        val notification = Notifications.build(this, state)
+        if (Build.VERSION.SDK_INT >= 34) {
+            startForeground(id, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(id, notification)
+        }
+        // The previous one is no longer the service's, so it can really go.
+        if (shownId != 0 && shownId != id) getSystemService(NotificationManager::class.java).cancel(shownId)
+        shownId = id
+    }
+
     override fun onDestroy() {
+        instance = null
         unregisterReceiver(unlocked)
         runCatching { getSystemService(ConnectivityManager::class.java).unregisterNetworkCallback(network) }
         socket?.close(1000, null)
@@ -187,6 +202,15 @@ class GuardService : Service() {
         private const val IDLE_MS = 30 * 60_000L
         private const val RECONNECT_MIN_MS = 5_000L
         private const val RECONNECT_MAX_MS = 60_000L
+
+        @Volatile private var instance: GuardService? = null
+
+        /** Updates the running service's notification; false when the service is not running. */
+        fun showForeground(state: AlarmState): Boolean {
+            val service = instance ?: return false
+            service.foreground(state)
+            return true
+        }
 
         fun start(context: Context) {
             // Not allowed from the background on recent Android (a widget tap waking the process, say):
