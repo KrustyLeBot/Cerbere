@@ -6,6 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -39,6 +42,11 @@ class AlarmWidget : AppWidgetProvider() {
         }
     }
 
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
+        // Resized: before Android 12 the layout is chosen here, from the new height.
+        update(context, (context.applicationContext as CerbereApp).alarm.state.value)
+    }
+
     companion object {
         private class Dog(val level: Level, val column: Int, val glow: Int, val on: Int, val off: Int, val label: Int)
 
@@ -48,11 +56,28 @@ class AlarmWidget : AppWidgetProvider() {
             Dog(Level.ARMED, R.id.col_on, R.id.glow_on, R.id.head_on_on, R.id.head_off_on, R.id.label_on),
         )
 
+        /** Below this height (one row on most launchers) the compact layout is used. */
+        private const val COMPACT_BELOW_DP = 100f
+
         fun update(context: Context, state: AlarmState) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, AlarmWidget::class.java))
-            if (ids.isEmpty()) return
-            val views = RemoteViews(context.packageName, R.layout.widget_alarm)
+            ids.forEach { manager.updateAppWidget(it, views(context, state, manager, it)) }
+        }
+
+        private fun views(context: Context, state: AlarmState, manager: AppWidgetManager, id: Int): RemoteViews {
+            val full = fill(context, state, R.layout.widget_alarm)
+            val compact = fill(context, state, R.layout.widget_alarm_compact)
+            if (Build.VERSION.SDK_INT >= 31) {
+                // The launcher picks the layout for the size it gives the widget, also while resizing.
+                return RemoteViews(mapOf(SizeF(180f, 40f) to compact, SizeF(180f, COMPACT_BELOW_DP) to full))
+            }
+            val height = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+            return if (height in 1 until COMPACT_BELOW_DP.toInt()) compact else full
+        }
+
+        private fun fill(context: Context, state: AlarmState, layout: Int): RemoteViews {
+            val views = RemoteViews(context.packageName, layout)
             val current = state.pending ?: state.level
             views.setInt(
                 R.id.root, "setBackgroundResource",
@@ -87,7 +112,7 @@ class AlarmWidget : AppWidgetProvider() {
                 R.id.subtitle,
                 PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE),
             )
-            manager.updateAppWidget(ids, views)
+            return views
         }
     }
 }
