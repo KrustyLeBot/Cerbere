@@ -66,8 +66,8 @@ class AlarmWidget : AppWidgetProvider() {
         }
 
         private fun views(context: Context, state: AlarmState, manager: AppWidgetManager, id: Int): RemoteViews {
-            val full = fill(context, state, R.layout.widget_alarm)
-            val compact = fill(context, state, R.layout.widget_alarm_compact)
+            val full = fill(context, state, R.layout.widget_alarm, labelSp = 12f)
+            val compact = fill(context, state, R.layout.widget_alarm_compact, labelSp = 10f)
             if (Build.VERSION.SDK_INT >= 31) {
                 // The launcher picks the layout for the size it gives the widget, also while resizing.
                 return RemoteViews(mapOf(SizeF(180f, 40f) to compact, SizeF(180f, COMPACT_BELOW_DP) to full))
@@ -76,7 +76,7 @@ class AlarmWidget : AppWidgetProvider() {
             return if (height in 1 until COMPACT_BELOW_DP.toInt()) compact else full
         }
 
-        private fun fill(context: Context, state: AlarmState, layout: Int): RemoteViews {
+        private fun fill(context: Context, state: AlarmState, layout: Int, labelSp: Float): RemoteViews {
             val views = RemoteViews(context.packageName, layout)
             val current = state.pending ?: state.level
             views.setInt(
@@ -94,7 +94,7 @@ class AlarmWidget : AppWidgetProvider() {
                 views.setViewVisibility(dog.on, if (lit) View.VISIBLE else View.GONE)
                 views.setViewVisibility(dog.off, if (lit) View.GONE else View.VISIBLE)
                 views.setTextColor(dog.label, context.getColor(if (lit) R.color.widget_text else R.color.widget_dim))
-                views.setTextViewTextSize(dog.label, TypedValue.COMPLEX_UNIT_SP, if (lit) 13f else 12f)
+                views.setTextViewTextSize(dog.label, TypedValue.COMPLEX_UNIT_SP, if (lit) labelSp + 1 else labelSp)
                 if (state.loggedIn) views.setOnClickPendingIntent(dog.column, ActionReceiver.intent(context, dog.level))
             }
             views.setTextViewText(
