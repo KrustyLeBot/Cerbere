@@ -23,6 +23,11 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Cerbere">
 
+        <!-- Android Auto lists the app as a media app. android:resource, never android:value: with value the app is invisible. -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -50,6 +55,15 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="@string/guard_service_reason" />
+        </service>
+
+        <!-- The two car tiles (DÉPART / ARRIVÉE) that fire the user's webhooks. Not a foreground service on purpose. -->
+        <service
+            android:name=".car.CarMediaService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
         </service>
 
         <receiver

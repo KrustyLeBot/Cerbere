@@ -12,12 +12,13 @@ import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
 
 /**
- * The Somfy login (email, password, session tokens, chosen site), encrypted at rest with an
+ * An encrypted key/value file: by default the Somfy login (email, password, session tokens, chosen site), encrypted at rest with an
  * AES-256-GCM key that lives in the Android Keystore and cannot be extracted. The password is kept
  * so a dead refresh token can be replaced without asking again, the way Somfy's own app does.
  */
-class Vault(context: Context) {
-    private val file = File(context.noBackupFilesDir, "somfy.bin")
+class Vault(context: Context, name: String = "somfy") {
+    private val file = File(context.noBackupFilesDir, "$name.bin")
+    private val tmpName = "$name.tmp"
 
     @Volatile private var loaded = false
     @Volatile private var cached: Map<String, String> = emptyMap()
@@ -55,7 +56,7 @@ class Vault(context: Context) {
         if (next == cached) return
         val cipher = Cipher.getInstance(TRANSFORM).apply { init(Cipher.ENCRYPT_MODE, key()) }
         val ct = cipher.doFinal(JSONObject(next as Map<*, *>).toString().toByteArray())
-        val tmp = File(file.parentFile, "somfy.tmp")
+        val tmp = File(file.parentFile, tmpName)
         tmp.writeBytes(byteArrayOf(cipher.iv.size.toByte()) + cipher.iv + ct)
         tmp.renameTo(file)
         cached = next

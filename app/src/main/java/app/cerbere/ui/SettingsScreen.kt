@@ -13,6 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.fillMaxWidth
+import app.cerbere.car.ActionConfig
+import app.cerbere.car.ActionId
+import app.cerbere.car.WebhookClient
+import app.cerbere.car.WebhookStore
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -108,6 +114,16 @@ fun SettingsScreen(vm: MainViewModel, state: AlarmState) {
                 }) { Text("Exclure de l'optimisation") }
             }
 
+            SectionTitle("Android Auto")
+            SettingsCard {
+                SettingsHint(
+                    "Dans la voiture, Cerbère affiche deux tuiles, DÉPART et ARRIVÉE. Chacune appelle le webhook ci-dessous " +
+                        "(ton Flow Homey), sans passer par l'API Somfy. Le HTTPS est obligatoire.",
+                )
+                val store = remember { WebhookStore(context) }
+                ActionId.entries.forEach { id -> WebhookEditor(store, id) }
+            }
+
             UpdateSettings(vm.updates)
             AboutSettings(
                 "Cerbère",
@@ -122,4 +138,30 @@ fun SettingsScreen(vm: MainViewModel, state: AlarmState) {
             onConfirm = { vm.logout() }, onDismiss = { confirmLogout = false }, destructive = true,
         )
     }
+}
+
+@Composable
+private fun WebhookEditor(store: WebhookStore, id: ActionId) {
+    var config by remember { mutableStateOf(store.load(id)) }
+    var result by remember { mutableStateOf<String?>(null) }
+    fun change(next: ActionConfig) { config = next; store.save(next) }
+    Text(id.label, fontWeight = FontWeight.SemiBold)
+    OutlinedTextField(
+        config.url, { change(config.copy(url = it)) }, label = { Text("URL du webhook") },
+        singleLine = true, modifier = Modifier.fillMaxWidth(),
+    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text("POST (JSON) au lieu de GET", Modifier.weight(1f))
+        Switch(config.post, { change(config.copy(post = it)) })
+    }
+    if (config.post) {
+        OutlinedTextField(
+            config.body, { change(config.copy(body = it)) }, label = { Text("Corps JSON (vide = {})") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+    OutlinedButton(onClick = { result = "envoi…"; WebhookClient.fire(config) { result = it.message } }, enabled = config.isConfigured) {
+        Text("Tester ${id.label}")
+    }
+    result?.let { SettingsHint(it) }
 }

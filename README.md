@@ -13,6 +13,25 @@ app suite (Synchrotron, Griffonote, Ecoutify, Météorite): same look, same upda
   over other apps"; without it the prompt comes as a notification). It can be turned off in Settings.
 - **Live**: changes made anywhere (keypad, Somfy's app, another phone) show within a second.
 
+## In the car (Android Auto)
+
+Cerbère also shows up in Android Auto as a media app with two tiles, **DÉPART** (orange) and **ARRIVÉE**
+(green). A tap calls a webhook you set in Settings → Android Auto (URL, GET or POST + JSON body, test
+button), typically a Homey Flow that arms the alarm, checks and closes the garage door, etc. It does **not**
+go through the Somfy API. The tile subtitle shows the last result (`14:32:07 — OK (200)`).
+
+- Android Auto only admits approved app categories, none of which is "a button that calls a URL", so the app
+  presents itself as a media app whose two "tracks" are the actions (`car/CarMediaService`).
+- The URLs open the garage, so they are stored encrypted (Keystore), apart from the Somfy login. HTTPS only.
+- Rules that keep it working: never request audio focus, never reach `STATE_PLAYING` (so Spotify keeps
+  playing and the steering-wheel keys stay with it), no media notification; items are `FLAG_PLAYABLE`
+  (browsable ones get prefetched and would fire by themselves); feedback goes through `STATE_ERROR`, the
+  only channel Android Auto reads without opening a "now playing" screen that never ends; the manifest
+  metadata uses `android:resource`, never `android:value` (the app would be invisible).
+- Android Auto needs "Unknown sources" in its developer settings for an app installed outside the Play
+  Store; that setting resets when Android Auto updates. After changing discovery metadata, uninstall,
+  reinstall, force-stop Android Auto and reconnect. The desktop head unit emulator tests the grid.
+
 ## How it talks to Somfy
 
 There is no public Somfy Protect API: Cerbère uses the one of Somfy's own app, reverse-engineered by
@@ -39,6 +58,7 @@ except to Somfy.
 
 ```
 app/src/main/java/app/cerbere/
+  car/        CarMediaService (Android Auto tiles), Webhooks (store, HTTP sender)
   somfy/      SomfyApi (HTTP, tokens, pacing), SomfyJson (parsing, unit-tested), AlarmRepository (state)
   service/    GuardService (websocket + poll + unlock), Notifications, Reminder, ActionReceiver, BootReceiver
   widget/     AlarmWidget (RemoteViews)
