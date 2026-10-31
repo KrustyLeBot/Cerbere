@@ -29,7 +29,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bedtime
+import androidx.compose.material.icons.filled.DirectionsCar
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
@@ -65,6 +67,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import app.cerbere.MainViewModel
+import app.cerbere.car.ActionId
+import app.cerbere.car.WebhookClient
+import app.cerbere.car.WebhookStore
 import app.cerbere.service.Reminder
 import app.cerbere.somfy.AlarmState
 import app.cerbere.somfy.Level
@@ -105,8 +110,51 @@ fun HomeScreen(vm: MainViewModel, state: AlarmState) {
                     StateButton(level, state, Modifier.weight(1f)) { vm.set(level) }
                 }
             }
+            CarActions()
             Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+/** The two car webhooks (DÉPART / ARRIVÉE), also reachable from the phone, e.g. leaving by scooter. */
+@Composable
+private fun CarActions() {
+    val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+    val store = remember { WebhookStore(context) }
+    var status by remember { mutableStateOf<String?>(null) }
+    var sending by remember { mutableStateOf(false) }
+    Text(
+        "Départ et arrivée",
+        style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(start = 20.dp, top = 24.dp, bottom = 8.dp),
+    )
+    Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        ActionId.entries.forEach { id ->
+            val accent = if (id == ActionId.DEPART) Color(0xFFF57C00) else Color(0xFF2E9E5B)
+            Surface(
+                color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = MaterialTheme.shapes.large,
+                modifier = Modifier.weight(1f).height(88.dp).clip(MaterialTheme.shapes.large).clickable(enabled = !sending) {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    sending = true
+                    status = "${id.label} — envoi…"
+                    WebhookClient.fire(store.load(id)) { result ->
+                        store.setLastResult(id, result.message)
+                        status = "${id.label} : ${result.message}"
+                        sending = false
+                    }
+                },
+            ) {
+                Column(Modifier.padding(12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                    Icon(if (id == ActionId.DEPART) Icons.Default.DirectionsCar else Icons.Default.Home, null, Modifier.size(28.dp), tint = accent)
+                    Spacer(Modifier.height(6.dp))
+                    Text(id.label, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+    }
+    status?.let {
+        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 20.dp, top = 8.dp, end = 20.dp))
     }
 }
 
